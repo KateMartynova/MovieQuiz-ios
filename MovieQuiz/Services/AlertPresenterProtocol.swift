@@ -1,5 +1,5 @@
 import Foundation
 
 protocol AlertPresenterProtocol {
-    func show(quiz result: QuizResultsViewModel)
+    func show(alertModel: AlertModel)
 }
