@@ -19,6 +19,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     var questionFactory: QuestionFactoryProtocol?
     private var currentQuestion: QuizQuestion?
     private var alertPresenter: AlertPresenterProtocol?
+    private var statisticService: StatisticService?
     
    
     // MARK: - Lifecycle
@@ -32,6 +33,10 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         questionFactory?.requestNextQuestion()
         
         alertPresenter = AlertPresenter(viewController: self)
+        
+        statisticService = StatisticServiceImplementation()
+        
+        
     }
     
     // MARK: - Private Methods
@@ -69,31 +74,56 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         }
     }
     
+    
+    private func showQuizResults() {
+        statisticService?.store(correct: correctAnswers, total: questionsAmount) //!
+
+//        let text = correctAnswers == questionsAmount ?
+//        "Поздравляем, Вы ответили на 10 из 10!" :
+//        "Вы ответили на \(correctAnswers) из 10, попробуйте ещё раз!"
+        let alertModel = AlertModel(title: "Этот раунд окончен!",
+                                    message: resultMessage(),
+                                    buttonText: "Сыграть ещё раз",
+                                    completion: { [weak self] in
+            guard let self = self else {
+                return
+            }
+            self.currentQuestionIndex = 0
+            self.correctAnswers = 0
+            self.questionFactory?.requestNextQuestion()
+        }
+        )
+        alertPresenter?.show(alertModel: alertModel)
+    }
+    
    
     private func showNextQuestionOrResults() {
         if currentQuestionIndex == questionsAmount - 1 {
-            let text = correctAnswers == questionsAmount ?
-            "Поздравляем, Вы ответили на 10 из 10!" :
-            "Вы ответили на \(correctAnswers) из 10, попробуйте ещё раз!"
-            let alertModel = AlertModel(title: "Этот раунд окончен!",
-                                        message: text,
-                                        buttonText: "Сыграть ещё раз",
-                                        completion: { [weak self] in
-                guard let self = self else {
-                    return
-                }
-                self.currentQuestionIndex = 0
-                self.correctAnswers = 0
-                self.questionFactory?.requestNextQuestion()
-            }
-            )
-            alertPresenter?.show(alertModel: alertModel)
-            currentQuestionIndex = 0
+            showQuizResults()
         } else {
             currentQuestionIndex += 1
             self.questionFactory?.requestNextQuestion()
         }
     }
+    
+    
+    func resultMessage() -> String {
+        guard let statisticService = statisticService, let bestGame = statisticService.bestGame else {
+            assertionFailure("error message")
+            return ""
+        }
+        
+        let totalGamesCount = "Количество сыгранных квизов: \(statisticService.gamesCount)"
+        let currentGameResult = "Ваш результат: \(correctAnswers)\\\(questionsAmount)"
+        let bestGameInfo = "Рекорд: \(bestGame.correct)\\\(bestGame.total)" + " (\(bestGame.date.dateTimeString))"
+        let averageAccuracy = "Средняя точность: \(String(format: "%.2f", statisticService.totalAccuracy))%"
+        
+        let resultMessage = [
+            currentGameResult, totalGamesCount, bestGameInfo, averageAccuracy].joined(separator: "\n")
+        
+        return resultMessage
+    }
+    
     
     // MARK: - QuestionFactoryDelegate
     
