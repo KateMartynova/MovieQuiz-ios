@@ -5,16 +5,16 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     // MARK: - IBOutlet
     
-    @IBOutlet private var imageView: UIImageView!
-    @IBOutlet private var textLabel: UILabel!
-    @IBOutlet private var counterLabel: UILabel!
-    @IBOutlet weak var noButton: UIButton!
-    @IBOutlet weak var yesButton: UIButton!
+    @IBOutlet private weak var imageView: UIImageView!
+    @IBOutlet private weak var textLabel: UILabel!
+    @IBOutlet private weak var counterLabel: UILabel!
+    @IBOutlet private weak var noButton: UIButton!
+    @IBOutlet private weak var yesButton: UIButton!
     // MARK: - Private Properties
     
-    let button = UIButton()
-    var correctAnswers = 0
-    var currentQuestionIndex = 0
+    private let button = UIButton()
+    private var correctAnswers = 0
+    private var currentQuestionIndex = 0
     private let questionsAmount: Int = 10
     var questionFactory: QuestionFactoryProtocol?
     private var currentQuestion: QuizQuestion?
@@ -74,13 +74,25 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         }
     }
     
+    private func givenAnswer(givenAnswer: Bool) {
+        
+        let givenAnswer: Bool = true
+        
+        guard let currentQuestion = currentQuestion else {
+            return
+        }
+        if givenAnswer == true {
+            yesButton.isEnabled = false
+            noButton.isEnabled = false
+
+            showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+        }
+    }
+    
     
     private func showQuizResults() {
-        statisticService?.store(correct: correctAnswers, total: questionsAmount) //!
-
-//        let text = correctAnswers == questionsAmount ?
-//        "Поздравляем, Вы ответили на 10 из 10!" :
-//        "Вы ответили на \(correctAnswers) из 10, попробуйте ещё раз!"
+        statisticService?.store(correct: correctAnswers, total: questionsAmount)
+        
         let alertModel = AlertModel(title: "Этот раунд окончен!",
                                     message: resultMessage(),
                                     buttonText: "Сыграть ещё раз",
@@ -142,24 +154,11 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     // MARK: - IBAction
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
-        
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-        let givenAnswer = false
-        noButton.isEnabled = false
-        
-        showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+        givenAnswer(givenAnswer: false)
     }
 
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-        let givenAnswer = true
-        yesButton.isEnabled = false
-
-        showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+        givenAnswer(givenAnswer: true)
     }
 }
 
