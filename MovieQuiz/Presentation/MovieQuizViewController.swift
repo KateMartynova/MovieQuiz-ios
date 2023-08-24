@@ -14,11 +14,11 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     // MARK: - Private Properties
     
     private let button = UIButton()
-    private var correctAnswers = 0
+//    private var correctAnswers = 0
     private let presenter = MovieQuizPresenter()
-    var questionFactory: QuestionFactoryProtocol?
-    private var alertPresenter: AlertPresenterProtocol?
-    private var statisticService: StatisticService?
+//    var questionFactory: QuestionFactoryProtocol?
+//    private var alertPresenter: AlertPresenterProtocol?
+//    private var statisticService: StatisticService?
     
    
     // MARK: - Lifecycle
@@ -29,17 +29,17 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         
         imageView.layer.cornerRadius = 20
         
-        questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
+        presenter.questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
         
         showLoadingIndicator()
         
-        questionFactory?.loadData()
+        presenter.questionFactory?.loadData()
         
-        questionFactory?.requestNextQuestion()
+        presenter.questionFactory?.requestNextQuestion()
         
-        alertPresenter = AlertPresenter(viewController: self)
+        presenter.alertPresenter = AlertPresenter(viewController: self)
         
-        statisticService = StatisticServiceImplementation()
+        presenter.statisticService = StatisticServiceImplementation()
     
     }
     
@@ -54,14 +54,16 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     func showAnswerResult(isCorrect: Bool) {
         if isCorrect {
-            correctAnswers += 1
         }
         imageView.layer.masksToBounds = true
         imageView.layer.borderWidth = 8
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.showNextQuestionOrResults()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+            self.presenter.showNextQuestionOrResults()
+            self.presenter.correctAnswers = self.presenter.correctAnswers
+            self.presenter.questionFactory = self.presenter.questionFactory
             self.imageView.layer.borderColor = UIColor.ypBlack.cgColor
             self.noButton.isEnabled = true
             self.yesButton.isEnabled = true
@@ -70,69 +72,53 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     }
     
     
-//    private func givenAnswer(givenAnswer: Bool) {
+//    private func showQuizResults() {
+//        statisticService?.store(correct: correctAnswers, total: presenter.questionsAmount)
 //        
-//        let givenAnswer: Bool = true
-//        
-//        guard let currentQuestion = currentQuestion else {
-//            return
+//        let alertModel = AlertModel(/*accessibilityIdentifier: "Test",*/
+//                                    title: "Этот раунд окончен!",
+//                                    message: resultMessage(),
+//                                    buttonText: "Сыграть ещё раз",
+//                                    completion: { [weak self] in
+//            guard let self = self else {
+//                return
+//            }
+//                    self.presenter.resetQuestionIndex()
+//                    self.correctAnswers = 0
+//                    self.questionFactory?.requestNextQuestion()
+//            
 //        }
-//        if givenAnswer == true {
-//            yesButton.isEnabled = false
-//            noButton.isEnabled = false
-//
-//            showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+//        )
+//        alertPresenter?.show(alertModel: alertModel)
+//    }
+    
+   
+//    private func showNextQuestionOrResults() {
+//        if presenter.isLastQuestion() {
+//            showQuizResults()
+//        } else {
+//            presenter.switchToNextQuestion()
+//            self.questionFactory?.requestNextQuestion()
 //        }
 //    }
     
     
-    private func showQuizResults() {
-        statisticService?.store(correct: correctAnswers, total: presenter.questionsAmount)
-        
-        let alertModel = AlertModel(/*accessibilityIdentifier: "Test",*/
-                                    title: "Этот раунд окончен!",
-                                    message: resultMessage(),
-                                    buttonText: "Сыграть ещё раз",
-                                    completion: { [weak self] in
-            guard let self = self else {
-                return
-            }
-                    self.presenter.resetQuestionIndex()
-                    self.correctAnswers = 0
-                    self.questionFactory?.requestNextQuestion()
-            
-        }
-        )
-        alertPresenter?.show(alertModel: alertModel)
-    }
-    
-   
-    private func showNextQuestionOrResults() {
-        if presenter.isLastQuestion() {
-            showQuizResults()
-        } else {
-            presenter.switchToNextQuestion()
-            self.questionFactory?.requestNextQuestion()
-        }
-    }
-    
-    
-    func resultMessage() -> String {
-        guard let statisticService = statisticService, let bestGame = statisticService.bestGame else {
-            assertionFailure("error message")
-            return ""
-        }
-        
-        let totalGamesCount = "Количество сыгранных квизов: \(statisticService.gamesCount)"
-        let currentGameResult = "Ваш результат: \(correctAnswers)\\\(presenter.questionsAmount)"
-        let bestGameInfo = "Рекорд: \(bestGame.correct)\\\(bestGame.total)" + " (\(bestGame.date.dateTimeString))"
-        let averageAccuracy = "Средняя точность: \(String(format: "%.2f", statisticService.totalAccuracy))%"
-        
-        let resultMessage = [
-            currentGameResult, totalGamesCount, bestGameInfo, averageAccuracy].joined(separator: "\n")
-        
-        return resultMessage
-    }
+//    func resultMessage() -> String {
+//        guard let statisticService = statisticService, let bestGame = statisticService.bestGame else {
+//            assertionFailure("error message")
+//            return ""
+//        }
+//        
+//        let totalGamesCount = "Количество сыгранных квизов: \(statisticService.gamesCount)"
+//        let currentGameResult = "Ваш результат: \(correctAnswers)\\\(presenter.questionsAmount)"
+//        let bestGameInfo = "Рекорд: \(bestGame.correct)\\\(bestGame.total)" + " (\(bestGame.date.dateTimeString))"
+//        let averageAccuracy = "Средняя точность: \(String(format: "%.2f", statisticService.totalAccuracy))%"
+//        
+//        let resultMessage = [
+//            currentGameResult, totalGamesCount, bestGameInfo, averageAccuracy].joined(separator: "\n")
+//        
+//        return resultMessage
+//    }
     
     
     private func showLoadingIndicator() {
@@ -156,11 +142,11 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
                 return
             }
             self.presenter.resetQuestionIndex()
-            self.correctAnswers = 0
-            self.questionFactory?.requestNextQuestion()
+            self.presenter.correctAnswers = 0
+            self.presenter.questionFactory?.requestNextQuestion()
         }
         )
-        alertPresenter?.show(alertModel: alertModel)
+        presenter.alertPresenter?.show(alertModel: alertModel)
     }
     
     
@@ -173,7 +159,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     func didLoadDataFromServer() {
         activityIndicator.isHidden = true
-        questionFactory?.requestNextQuestion()
+        presenter.questionFactory?.requestNextQuestion()
 
     }
 

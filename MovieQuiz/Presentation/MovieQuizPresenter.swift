@@ -4,10 +4,14 @@ import UIKit
 
 final class MovieQuizPresenter {
     
+    var correctAnswers: Int = 0
     let questionsAmount: Int = 10
     private var currentQuestionIndex: Int = 0
     var currentQuestion: QuizQuestion?
     weak var viewController: MovieQuizViewController?
+    var questionFactory: QuestionFactoryProtocol?
+    var statisticService: StatisticService?
+    var alertPresenter: AlertPresenterProtocol?
     
     func isLastQuestion() -> Bool {
         currentQuestionIndex == questionsAmount - 1
@@ -63,5 +67,53 @@ final class MovieQuizPresenter {
         DispatchQueue.main.async { [weak self] in
             self?.viewController?.show(quiz: viewModel)
         }
+    }
+    
+    
+    func showNextQuestionOrResults() {
+        if self.isLastQuestion() {
+            showQuizResults()
+        } else {
+            self.switchToNextQuestion()
+            self.questionFactory?.requestNextQuestion()
+        }
+    }
+    
+    
+    func showQuizResults() {
+        statisticService?.store(correct: correctAnswers, total: questionsAmount)
+        
+        let alertModel = AlertModel(title: "Этот раунд окончен!",
+                                    message: resultMessage(),
+                                    buttonText: "Сыграть ещё раз",
+                                    completion: { [weak self] in
+            guard let self = self else {
+                return
+            }
+                    self.resetQuestionIndex()
+                    self.correctAnswers = 0
+                    self.questionFactory?.requestNextQuestion()
+            
+        }
+        )
+        alertPresenter?.show(alertModel: alertModel)
+    }
+    
+    
+    func resultMessage() -> String {
+        guard let statisticService = statisticService, let bestGame = statisticService.bestGame else {
+            assertionFailure("error message")
+            return ""
+        }
+        
+        let totalGamesCount = "Количество сыгранных квизов: \(statisticService.gamesCount)"
+        let currentGameResult = "Ваш результат: \(correctAnswers)\\\(questionsAmount)"
+        let bestGameInfo = "Рекорд: \(bestGame.correct)\\\(bestGame.total)" + " (\(bestGame.date.dateTimeString))"
+        let averageAccuracy = "Средняя точность: \(String(format: "%.2f", statisticService.totalAccuracy))%"
+        
+        let resultMessage = [
+            currentGameResult, totalGamesCount, bestGameInfo, averageAccuracy].joined(separator: "\n")
+        
+        return resultMessage
     }
 }
