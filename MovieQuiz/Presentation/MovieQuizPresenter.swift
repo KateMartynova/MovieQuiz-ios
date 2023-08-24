@@ -31,27 +31,37 @@ final class MovieQuizPresenter {
     }
     
     
-    func givenAnswer(givenAnswer: Bool) {
+    func givenAnswer(isYes: Bool) {
         
-        let givenAnswer: Bool = true
+        let givenAnswer = isYes
         
         guard let currentQuestion = currentQuestion else {
             return
         }
-        if givenAnswer == true {
-            viewController?.yesButton.isEnabled = false
-            viewController?.noButton.isEnabled = false
-
-            viewController?.showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+        viewController?.yesButton.isEnabled = false
+        viewController?.noButton.isEnabled = false
+        
+        viewController?.showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+    }
+    
+    func yesButtonClicked(_ sender: UIButton) {
+        givenAnswer(isYes: true)
+    }
+    
+    func noButtonClicked(_ sender: UIButton) {
+        givenAnswer(isYes: false)
+    }
+    
+    
+    func didReceiveNextQuestion(question: QuizQuestion?) {
+        guard let question = question else {
+            return
         }
-    }
-    
-    
-    @IBAction func yesButtonClicked(_ sender: UIButton) {
-        givenAnswer(givenAnswer: true)
-    }
-    
-    @IBAction func noButtonClicked(_ sender: UIButton) {
-        givenAnswer(givenAnswer: false)
+        
+        currentQuestion = question
+        let viewModel = convert(model: question)
+        DispatchQueue.main.async { [weak self] in
+            self?.viewController?.show(quiz: viewModel)
+        }
     }
 }
