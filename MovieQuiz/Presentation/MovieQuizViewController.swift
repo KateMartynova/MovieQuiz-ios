@@ -98,7 +98,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     private func showQuizResults() {
         statisticService?.store(correct: correctAnswers, total: questionsAmount)
         
-        let alertModel = AlertModel(title: "Этот раунд окончен!",
+        let alertModel = AlertModel(/*accessibilityIdentifier: "Test",*/
+                                    title: "Этот раунд окончен!",
                                     message: resultMessage(),
                                     buttonText: "Сыграть ещё раз",
                                     completion: { [weak self] in
@@ -108,6 +109,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             self.currentQuestionIndex = 0
             self.correctAnswers = 0
             self.questionFactory?.requestNextQuestion()
+            
         }
         )
         alertPresenter?.show(alertModel: alertModel)

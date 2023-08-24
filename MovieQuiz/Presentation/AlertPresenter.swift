@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 
+
 final class AlertPresenter: AlertPresenterProtocol {
     
     private weak var viewController: UIViewController?
@@ -19,7 +20,7 @@ final class AlertPresenter: AlertPresenterProtocol {
             
             alertModel.completion()
         }
-        
+        alert.view.accessibilityIdentifier = "Alert"
         alert.addAction(action)
         
         viewController?.present(alert, animated: true)
