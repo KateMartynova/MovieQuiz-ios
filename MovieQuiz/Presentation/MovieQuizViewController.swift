@@ -1,6 +1,6 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController {
+final class MovieQuizViewController: UIViewController, MovieQuizViewControllerProtocol {
     
     
     // MARK: - IBOutlet
@@ -51,7 +51,8 @@ final class MovieQuizViewController: UIViewController {
                     self.presenter.restartGame()
                 }
 
-            alert.addAction(action)
+        alert.addAction(action)
+        alert.view.accessibilityIdentifier = "EndGame"
 
             self.present(alert, animated: true, completion: nil)
         }
@@ -92,7 +93,9 @@ final class MovieQuizViewController: UIViewController {
                         self.presenter.restartGame()
                     }
 
-                alert.addAction(action)
+        alert.addAction(action)
+        alert.view.accessibilityIdentifier = "Error"
+
             }
     
     

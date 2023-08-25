@@ -20,7 +20,6 @@ final class AlertPresenter: AlertPresenterProtocol {
             
             alertModel.completion()
         }
-        alert.view.accessibilityIdentifier = "Alert"
         alert.addAction(action)
         
         viewController?.present(alert, animated: true)
