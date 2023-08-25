@@ -5,101 +5,66 @@ final class MovieQuizViewController: UIViewController {
     
     // MARK: - IBOutlet
     
-    @IBOutlet weak var imageView: UIImageView!
-    @IBOutlet private weak var textLabel: UILabel!
-    @IBOutlet private weak var counterLabel: UILabel!
-    @IBOutlet weak var noButton: UIButton!
-    @IBOutlet weak var yesButton: UIButton!
-    @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
+    @IBOutlet private var imageView: UIImageView!
+    @IBOutlet private var textLabel: UILabel!
+    @IBOutlet private var counterLabel: UILabel!
+    @IBOutlet private var noButton: UIButton!
+    @IBOutlet private var yesButton: UIButton!
+    @IBOutlet private var activityIndicator: UIActivityIndicatorView!
     // MARK: - Private Properties
     
-    private let button = UIButton()
     private var presenter: MovieQuizPresenter!
-    private var statisticService: StatisticService?
     
    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        
         imageView.layer.cornerRadius = 20
         
         presenter = MovieQuizPresenter(viewController: self)
         
-        
-        showLoadingIndicator()
-        
-        presenter.alertPresenter = AlertPresenter(viewController: self)
-        
-        statisticService = StatisticServiceImplementation()
-    
     }
     
     // MARK: - Private Methods
 
     func show(quiz step: QuizStepViewModel) {
+        imageView.layer.borderColor = UIColor.clear.cgColor
+        yesButton.isEnabled = true
+        noButton.isEnabled = true
         imageView.image = step.image
         textLabel.text = step.question
         counterLabel.text = step.questionNumber
     }
     
-    
-    func showAnswerResult(isCorrect: Bool) {
-        presenter.didAnswer(isCorrectAnswer: isCorrect)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
-            self.presenter.showNextQuestionOrResults()
-            
-            self.imageView.layer.borderColor = UIColor.ypBlack.cgColor
-            self.noButton.isEnabled = true
-            self.yesButton.isEnabled = true
+    func show(quiz result: QuizResultsViewModel) {
+            let message = presenter.resultMessage()
 
-        }
-    }
-    
-    func showQuizResults() {
-        if presenter.isLastQuestion() {
-            
-            if let statisticService = statisticService {
-                statisticService.store(correct: presenter.correctAnswers, total: presenter.questionsAmount)
-                
-                let alertModel = AlertModel(title: "Этот раунд окончен!",
-                                            message: resultMessage(),
-                                            buttonText: "Сыграть ещё раз",
-                                            completion: { [weak self] in
-                    guard let self = self else {
-                        return
-                    }
+            let alert = UIAlertController(
+                title: result.title,
+                message: message,
+                preferredStyle: .alert)
+
+                let action = UIAlertAction(title: result.buttonText, style: .default) { [weak self] _ in
+                    guard let self = self else { return }
+
                     self.presenter.restartGame()
-                    
-                    
                 }
-                )
-                presenter.alertPresenter?.show(alertModel: alertModel)
-            }
+
+            alert.addAction(action)
+
+            self.present(alert, animated: true, completion: nil)
         }
-    }
     
-        
-        func resultMessage() -> String {
-            guard let statisticService = statisticService, let bestGame = statisticService.bestGame else {
-                assertionFailure("error message")
-                return ""
-            }
-            
-            let totalGamesCount = "Количество сыгранных квизов: \(statisticService.gamesCount)"
-            let currentGameResult = "Ваш результат: \(presenter.correctAnswers)\\\(presenter.questionsAmount)"
-            let bestGameInfo = "Рекорд: \(bestGame.correct)\\\(bestGame.total)" + " (\(bestGame.date.dateTimeString))"
-            let averageAccuracy = "Средняя точность: \(String(format: "%.2f", statisticService.totalAccuracy))%"
-            
-            let resultMessage = [
-                currentGameResult, totalGamesCount, bestGameInfo, averageAccuracy].joined(separator: "\n")
-            
-            return resultMessage
+    
+    func highlightImageBorder(isCorrectAnswer: Bool) {
+            imageView.layer.masksToBounds = true
+            imageView.layer.borderWidth = 8
+            imageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
+        yesButton.isEnabled = false
+        noButton.isEnabled = false
         }
-        
+    
     
     func showLoadingIndicator() {
         activityIndicator.isHidden = false
@@ -115,18 +80,20 @@ final class MovieQuizViewController: UIViewController {
     func showNetworkError(message: String) {
         hideLoadingIndicator()
         
-        let alertModel = AlertModel(title: "Ошибка",
-                                    message: message,
-                                    buttonText: "Попробовать еще раз",
-                                    completion: { [weak self] in
-            guard let self = self else {
-                return
+        let alert = UIAlertController(
+                    title: "Ошибка",
+                    message: message,
+                    preferredStyle: .alert)
+
+                    let action = UIAlertAction(title: "Попробовать ещё раз",
+                    style: .default) { [weak self] _ in
+                        guard let self = self else { return }
+
+                        self.presenter.restartGame()
+                    }
+
+                alert.addAction(action)
             }
-            self.presenter.restartGame()
-        }
-        )
-        presenter.alertPresenter?.show(alertModel: alertModel)
-    }
     
     
     // MARK: - IBAction

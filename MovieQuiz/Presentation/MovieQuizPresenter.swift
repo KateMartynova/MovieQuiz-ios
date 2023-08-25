@@ -4,38 +4,46 @@ import UIKit
 
 final class MovieQuizPresenter: QuestionFactoryDelegate {
     
-    var correctAnswers: Int = 0
-    let questionsAmount: Int = 10
-    private var currentQuestionIndex: Int = 0
-    var currentQuestion: QuizQuestion?
-    private weak var viewController: MovieQuizViewController?
+    private let statisticService: StatisticService?
     private var questionFactory: QuestionFactoryProtocol?
-//    var statisticService: StatisticService?
+    private weak var viewController: MovieQuizViewController?
+    
+    private var currentQuestion: QuizQuestion?
+    private var questionsAmount: Int = 10
+    private var currentQuestionIndex: Int = 0
+    private var correctAnswers: Int = 0
+    
     var alertPresenter: AlertPresenterProtocol?
     
     init(viewController: MovieQuizViewController) {
-            self.viewController = viewController
-            
-            questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
-            questionFactory?.loadData()
-            viewController.showLoadingIndicator()
-        }
+        self.viewController = viewController
+        
+        statisticService = StatisticServiceImplementation()
+        
+        questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
+        questionFactory?.loadData()
+        viewController.showLoadingIndicator()
+    }
+    
+    // MARK: - QuestionFactoryDelegate
     
     func didLoadDataFromServer() {
         viewController?.hideLoadingIndicator()
         questionFactory?.requestNextQuestion()
     }
     
+    
     func didFailToLoadData(with error: Error) {
         let message = error.localizedDescription
         viewController?.showNetworkError(message: message)
     }
     
+    
     func didRecieveNextQuestion(question: QuizQuestion?) {
         guard let question = question else {
             return
         }
-        
+
         currentQuestion = question
         let viewModel = convert(model: question)
         DispatchQueue.main.async { [weak self] in
@@ -48,11 +56,20 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         currentQuestionIndex == questionsAmount - 1
     }
     
+    
+    func didAnswer(isCorrectAnswer: Bool) {
+        if isCorrectAnswer {
+            correctAnswers += 1
+        }
+    }
+    
+    
     func restartGame() {
         currentQuestionIndex = 0
         correctAnswers = 0
         questionFactory?.requestNextQuestion()
     }
+    
     
     func switchToNextQuestion() {
         currentQuestionIndex += 1
@@ -68,6 +85,16 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     }
     
     
+    func yesButtonClicked(_ sender: UIButton) {
+        givenAnswer(isYes: true)
+    }
+    
+    
+    func noButtonClicked(_ sender: UIButton) {
+        givenAnswer(isYes: false)
+    }
+    
+    
     func givenAnswer(isYes: Bool) {
         
         let givenAnswer = isYes
@@ -75,56 +102,57 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         guard let currentQuestion = currentQuestion else {
             return
         }
-        viewController?.yesButton.isEnabled = false
-        viewController?.noButton.isEnabled = false
         
-        viewController?.showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+        proceedWithAnswer(isCorrect: givenAnswer == currentQuestion.correctAnswer)
     }
     
     
-    func didAnswer(isCorrectAnswer: Bool) {
-        if isCorrectAnswer {
-            correctAnswers += 1
-        }
-        viewController?.imageView.layer.masksToBounds = true
-        viewController?.imageView.layer.borderWidth = 8
-        viewController?.imageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
-    }
-    
-    func yesButtonClicked(_ sender: UIButton) {
-        givenAnswer(isYes: true)
-    }
-    
-    func noButtonClicked(_ sender: UIButton) {
-        givenAnswer(isYes: false)
-    }
-    
-    
-    func didReceiveNextQuestion(question: QuizQuestion?) {
-        guard let question = question else {
-            return
-        }
+    func proceedWithAnswer(isCorrect: Bool) {
+        didAnswer(isCorrectAnswer: isCorrect)
         
-        currentQuestion = question
-        let viewModel = convert(model: question)
-        DispatchQueue.main.async { [weak self] in
-            self?.viewController?.show(quiz: viewModel)
+        viewController?.highlightImageBorder(isCorrectAnswer: isCorrect)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+            self.proceedToNextQuestionOrResults()
         }
     }
     
-    
-    func showNextQuestionOrResults() {
+    func proceedToNextQuestionOrResults() {
         if self.isLastQuestion() {
-            viewController?.showQuizResults()
+            showQuizResults()
         } else {
             self.switchToNextQuestion()
-            self.questionFactory?.requestNextQuestion()
+            questionFactory?.requestNextQuestion()
         }
     }
     
     
-   
+    func showQuizResults() {
+        let message = resultMessage()
+        
+        let viewModel = QuizResultsViewModel(
+                        title: "Этот раунд окончен!",
+                        text: message,
+                        buttonText: "Сыграть ещё раз")
+                        viewController?.show(quiz: viewModel)
+    }
     
     
-    
+    func resultMessage() -> String {
+        guard let statisticService = statisticService, let bestGame = statisticService.bestGame else {
+            assertionFailure("error message")
+            return ""
+        }
+        
+        let totalGamesCount = "Количество сыгранных квизов: \(statisticService.gamesCount)"
+        let currentGameResult = "Ваш результат: \(correctAnswers)\\\(questionsAmount)"
+        let bestGameInfo = "Рекорд: \(bestGame.correct)\\\(bestGame.total)" + " (\(bestGame.date.dateTimeString))"
+        let averageAccuracy = "Средняя точность: \(String(format: "%.2f", statisticService.totalAccuracy))%"
+        
+        let resultMessage = [
+            currentGameResult, totalGamesCount, bestGameInfo, averageAccuracy].joined(separator: "\n")
+        
+        return resultMessage
+    }
 }
