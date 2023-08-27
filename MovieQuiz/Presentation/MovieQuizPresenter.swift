@@ -140,6 +140,7 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     
     
     func showQuizResults() {
+        statisticService?.store(correct: correctAnswers, total: questionsAmount)
         let message = resultMessage()
         
         let viewModel = QuizResultsViewModel(
