@@ -30,6 +30,8 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
   
         self.viewController = viewController
         
+        alertPresenter = AlertPresenter(viewController: viewController as? UIViewController)
+        
         statisticService = StatisticServiceImplementation()
         
         questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
@@ -144,13 +146,15 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         statisticService?.store(correct: correctAnswers, total: questionsAmount)
         let message = resultMessage()
         
-        let viewModel = QuizResultsViewModel(
+        let viewModel = AlertModel(
             title: "Этот раунд окончен!",
-            text: message,
-            buttonText: "Сыграть ещё раз")
-        viewController?.show(quiz: viewModel)
-        
-        self.restartGame()
+            message: message,
+            buttonText: "Сыграть ещё раз",
+            completion: { [weak self] in
+                self?.restartGame()
+            }
+        )
+        alertPresenter?.show(alertModel: viewModel)
     }
     
     

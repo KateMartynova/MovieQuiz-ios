@@ -44,7 +44,7 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         let action = UIAlertAction(title: result.buttonText, style: .default)
         
         alert.addAction(action)
-        alert.view.accessibilityIdentifier = "EndGame"
+//        alert.view.accessibilityIdentifier = "EndGame"
         
         self.present(alert, animated: true, completion: nil)
     }
@@ -82,7 +82,7 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
                                    style: .default)
 
         alert.addAction(action)
-        alert.view.accessibilityIdentifier = "Error"
+//        alert.view.accessibilityIdentifier = "Error"
         
         self.present(alert, animated: true, completion: nil)
         
