@@ -15,7 +15,7 @@ protocol MovieQuizViewControllerProtocol: AnyObject {
 
 final class MovieQuizPresenter: QuestionFactoryDelegate {
     
-    private let statisticService: StatisticService?
+    private var statisticService: StatisticService?
     private var questionFactory: QuestionFactoryProtocol?
     weak var viewController: MovieQuizViewControllerProtocol?
     
@@ -27,6 +27,7 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     var alertPresenter: AlertPresenterProtocol?
     
     init(viewController: MovieQuizViewControllerProtocol) {
+  
         self.viewController = viewController
         
         statisticService = StatisticServiceImplementation()
@@ -54,7 +55,7 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         guard let question = question else {
             return
         }
-
+        
         currentQuestion = question
         let viewModel = convert(model: question)
         DispatchQueue.main.async { [weak self] in
@@ -144,10 +145,12 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         let message = resultMessage()
         
         let viewModel = QuizResultsViewModel(
-                        title: "Этот раунд окончен!",
-                        text: message,
-                        buttonText: "Сыграть ещё раз")
-                        viewController?.show(quiz: viewModel)
+            title: "Этот раунд окончен!",
+            text: message,
+            buttonText: "Сыграть ещё раз")
+        viewController?.show(quiz: viewModel)
+        
+        self.restartGame()
     }
     
     
@@ -166,5 +169,12 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
             currentGameResult, totalGamesCount, bestGameInfo, averageAccuracy].joined(separator: "\n")
         
         return resultMessage
+    }
+    
+    
+    func showNetworkError() {
+        
+        viewController?.showNetworkError(message: "Сеть недоступна")
+        self.restartGame()
     }
 }
