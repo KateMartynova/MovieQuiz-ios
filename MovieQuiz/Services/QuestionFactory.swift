@@ -85,7 +85,7 @@ final  class QuestionFactory: QuestionFactoryProtocol {
             
             let rating = Float(movie.rating) ?? 0
             
-            let randomRating = (1...10).randomElement() ?? 0
+            let randomRating = (6...9).randomElement() ?? 0
             let text = "Рейтинг этого фильма больше чем \(randomRating)?"
             let correctAnswer = rating > Float(randomRating)
             
@@ -93,7 +93,7 @@ final  class QuestionFactory: QuestionFactoryProtocol {
             
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-                self.delegate?.didReceiveNextQuestion(question: question)
+                self.delegate?.didRecieveNextQuestion(question: question)
             }
         }
     }
